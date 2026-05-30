@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diabetes Risk Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design tokens ─────────────────────────────────── */
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #13161e;
+      --panel:     #181c27;
+      --border:    #252b3b;
+      --accent:    #e8593a;
+      --accent2:   #f5a623;
+      --safe:      #3dd68c;
+      --text:      #e2e8f0;
+      --muted:     #6b7694;
+      --label:     #9aa3bb;
+      --radius:    12px;
+      --mono:      "DM Mono", monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid backdrop ─────────────────────────────────── */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ────────────────────────────────────────── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 56px;
+    }
+
+    .header-icon {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+
+    header h1 {
+      font-family: "DM Serif Display", serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    header p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    /* ── Card ──────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ── Form grid ─────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--label);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    input, select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      padding: 10px 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      appearance: none;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232, 89, 58, 0.18);
+    }
+
+    select option { background: var(--panel); }
+
+    .hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Toggle pills ──────────────────────────────────── */
+    .toggle-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .toggle-group input[type="radio"] { display: none; }
+
+    .toggle-group label {
+      flex: 1;
+      text-align: center;
+      padding: 9px 0;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      cursor: pointer;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .toggle-group input[type="radio"]:checked + label {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    /* ── Submit button ─────────────────────────────────── */
+    .btn-row {
+      margin-top: 28px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    button[type="submit"] {
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.92rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      padding: 13px 36px;
+      border: none;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    button[type="submit"]:hover  { opacity: 0.88; transform: translateY(-1px); }
+    button[type="submit"]:active { transform: translateY(0); }
+    button[type="submit"]:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Result panel ──────────────────────────────────── */
+    #result {
+      display: none;
+      animation: fadeUp 0.35s ease forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-headline {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .result-badge {
+      font-family: "DM Serif Display", serif;
+      font-size: 1.5rem;
+      padding: 10px 24px;
+      border-radius: 40px;
+      letter-spacing: -0.01em;
+    }
+
+    .result-badge.diabetic {
+      background: rgba(232, 89, 58, 0.15);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    .result-badge.non-diabetic {
+      background: rgba(61, 214, 140, 0.12);
+      color: var(--safe);
+      border: 1px solid var(--safe);
+    }
+
+    .result-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    /* ── Probability bars ──────────────────────────────── */
+    .prob-bars { display: grid; gap: 14px; }
+
+    .prob-row { display: flex; flex-direction: column; gap: 6px; }
+
+    .prob-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--label);
+    }
+
+    .bar-track {
+      height: 8px;
+      background: var(--panel);
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 20px;
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .bar-fill.risk    { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .bar-fill.safe    { background: linear-gradient(90deg, #2db874, var(--safe)); }
+
+    /* ── Error toast ───────────────────────────────────── */
+    #error-box {
+      display: none;
+      margin-top: 20px;
+      padding: 14px 18px;
+      border-radius: 9px;
+      background: rgba(232, 89, 58, 0.1);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    /* ── Loading spinner ───────────────────────────────── */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer note ────────────────────────────────────── */
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="header-icon">🩺</div>
+    <div>
+      <h1>Diabetes <em>Risk</em> Predictor</h1>
+      <p>Random Forest model trained on the Diabetes Prediction Dataset.<br>Enter patient data below to get an instant risk assessment.</p>
+    </div>
+  </header>
+
+  <!-- ── Input Form ── -->
+  <form id="predict-form">
+    <div class="card">
+      <div class="card-title">Patient Demographics</div>
+      <div class="form-grid">
+
+        <!-- Gender -->
+        <div class="field">
+          <label>Gender</label>
+          <select name="gender" required>
+            <option value="" disabled selected>Select…</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Age -->
+        <div class="field">
+          <label>Age</label>
+          <input type="number" name="age" min="0" max="120" step="1" placeholder="e.g. 45" required />
+          <span class="hint">Years (0 – 120)</span>
+        </div>
+
+        <!-- BMI -->
+        <div class="field">
+          <label>BMI</label>
+          <input type="number" name="bmi" min="10" max="70" step="0.1" placeholder="e.g. 27.5" required />
+          <span class="hint">Body Mass Index (10 – 70)</span>
+        </div>
+
+        <!-- Smoking history -->
+        <div class="field">
+          <label>Smoking History</label>
+          <select name="smoking_history" required>
+            <option value="" disabled selected>Select…</option>
+            <option value="never">Never</option>
+            <option value="former">Former</option>
+            <option value="current">Current</option>
+            <option value="ever">Ever</option>
+            <option value="not current">Not Current</option>
+            <option value="No Info">No Info</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Clinical Measurements</div>
+      <div class="form-grid">
+
+        <!-- HbA1c -->
+        <div class="field">
+          <label>HbA1c Level</label>
+          <input type="number" name="HbA1c_level" min="3.5" max="9" step="0.1" placeholder="e.g. 5.7" required />
+          <span class="hint">Glycated haemoglobin (3.5 – 9.0)</span>
+        </div>
+
+        <!-- Blood glucose -->
+        <div class="field">
+          <label>Blood Glucose Level</label>
+          <input type="number" name="blood_glucose_level" min="80" max="300" step="1" placeholder="e.g. 140" required />
+          <span class="hint">mg/dL (80 – 300)</span>
+        </div>
+
+        <!-- Hypertension -->
+        <div class="field">
+          <label>Hypertension</label>
+          <div class="toggle-group">
+            <input type="radio" name="hypertension" id="ht-no"  value="0" checked />
+            <label for="ht-no">No</label>
+            <input type="radio" name="hypertension" id="ht-yes" value="1" />
+            <label for="ht-yes">Yes</label>
+          </div>
+        </div>
+
+        <!-- Heart disease -->
+        <div class="field">
+          <label>Heart Disease</label>
+          <div class="toggle-group">
+            <input type="radio" name="heart_disease" id="hd-no"  value="0" checked />
+            <label for="hd-no">No</label>
+            <input type="radio" name="heart_disease" id="hd-yes" value="1" />
+            <label for="hd-yes">Yes</label>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" id="submit-btn">Analyse Risk →</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- ── Error message ── -->
+  <div id="error-box"></div>
+
+  <!-- ── Result panel ── -->
+  <div class="card" id="result">
+    <div class="card-title">Prediction Result</div>
+
+    <div class="result-headline">
+      <div class="result-badge" id="result-badge">—</div>
+      <div class="result-sub" id="result-sub"></div>
+    </div>
+
+    <div class="prob-bars">
+      <div class="prob-row">
+        <div class="prob-header">
+          <span>Non-Diabetic Probability</span>
+          <span id="prob-safe-val">—</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill safe" id="bar-safe" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-header">
+          <span>Diabetic Probability</span>
+          <span id="prob-risk-val">—</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill risk" id="bar-risk" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Powered by Random Forest · Flask API on localhost:5000 · For educational purposes only
+  </footer>
+
+</div>
+
+<script>
+  const API = "";  // empty = same origin (served by Flask)
+
+  const form      = document.getElementById("predict-form");
+  const submitBtn = document.getElementById("submit-btn");
+  const resultBox = document.getElementById("result");
+  const errorBox  = document.getElementById("error-box");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.style.display = "none";
+    resultBox.style.display = "none";
+
+    // Disable button & show spinner
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span>Analysing…';
+
+    const fd = new FormData(form);
+    const payload = {
+      gender:              fd.get("gender"),
+      age:                 parseFloat(fd.get("age")),
+      hypertension:        parseInt(fd.get("hypertension")),
+      heart_disease:       parseInt(fd.get("heart_disease")),
+      smoking_history:     fd.get("smoking_history"),
+      bmi:                 parseFloat(fd.get("bmi")),
+      HbA1c_level:         parseFloat(fd.get("HbA1c_level")),
+      blood_glucose_level: parseInt(fd.get("blood_glucose_level")),
+    };
+
+    try {
+      const resp = await fetch(`${API}/predict`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(payload),
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.error || `Server error ${resp.status}`);
+      }
+
+      showResult(data);
+    } catch (err) {
+      errorBox.textContent = "⚠  " + err.message;
+      errorBox.style.display = "block";
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = "Analyse Risk →";
+    }
+  });
+
+  function showResult(data) {
+    const badge   = document.getElementById("result-badge");
+    const sub     = document.getElementById("result-sub");
+    const safeVal = document.getElementById("prob-safe-val");
+    const riskVal = document.getElementById("prob-risk-val");
+    const barSafe = document.getElementById("bar-safe");
+    const barRisk = document.getElementById("bar-risk");
+
+    const isDiabetic = data.prediction === 1;
+    const pSafe = data.probability.non_diabetic;
+    const pRisk = data.probability.diabetic;
+
+    badge.textContent = data.label;
+    badge.className   = "result-badge " + (isDiabetic ? "diabetic" : "non-diabetic");
+
+    sub.innerHTML = isDiabetic
+      ? "The model indicates an <strong>elevated risk</strong> of diabetes. Please consult a healthcare professional for a formal diagnosis."
+      : "The model does not indicate a high risk of diabetes based on the provided data. Regular check-ups are still recommended.";
+
+    safeVal.textContent = pSafe + "%";
+    riskVal.textContent = pRisk + "%";
+
+    // Animate bars on next paint
+    requestAnimationFrame(() => {
+      barSafe.style.width = pSafe + "%";
+      barRisk.style.width = pRisk + "%";
+    });
+
+    resultBox.style.display = "block";
+    // Re-trigger animation
+    resultBox.style.animation = "none";
+    resultBox.offsetHeight;
+    resultBox.style.animation = "";
+    resultBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+</script>
+</body>
+</html>
