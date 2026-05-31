@@ -14,7 +14,7 @@ CORS(app)
 # Load saved model & scaler on startup
 # ─────────────────────────────────────────────
 try:
-    model  = joblib.load(os.path.join(BASE_DIR, "random_forest_model.pkl"))
+    model  = joblib.load(os.path.join(BASE_DIR, "rf_model_compressed.pkl"))
     scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
     print("✅  Model and scaler loaded successfully.")
 except FileNotFoundError as e:
